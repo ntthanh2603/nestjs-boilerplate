@@ -24,6 +24,24 @@ services:
       timeout: 5s
       retries: 10
 
+  app:
+    container_name: anex-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - anex
+
 volumes:
   pgdata:
 
