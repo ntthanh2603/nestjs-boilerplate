@@ -350,4 +350,38 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       throw new Error(`Failed to delete key ${key}: ${errorMessage}`);
     }
   }
+
+  /**
+   * Set expiration for a key in seconds
+   *
+   * @param key - Redis key name
+   * @param seconds - Expiration time in seconds
+   * @returns 1 if the timeout was set, 0 if key does not exist
+   */
+  public async expire(key: string, seconds: number): Promise<number> {
+    try {
+      return await this.client.expire(key, seconds);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Failed to set expire for key ${key}: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Set expiration for a key in milliseconds
+   *
+   * @param key - Redis key name
+   * @param milliseconds - Expiration time in milliseconds
+   * @returns 1 if the timeout was set, 0 if key does not exist
+   */
+  public async pexpire(key: string, milliseconds: number): Promise<number> {
+    try {
+      return await this.client.pexpire(key, milliseconds);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Failed to set pexpire for key ${key}: ${errorMessage}`);
+    }
+  }
 }
