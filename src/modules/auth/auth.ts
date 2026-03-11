@@ -1,7 +1,7 @@
 import { AUTH_IGNORE_ROUTERS } from '@/commons/constants/app.constants';
 import { Role } from '@/commons/enums/app.enum';
 import { betterAuth } from 'better-auth';
-import { admin, openAPI } from 'better-auth/plugins';
+import { admin, openAPI, jwt, bearer } from 'better-auth/plugins';
 import { v7 as uuidv7 } from 'uuid';
 import type { ConfigService } from '@nestjs/config';
 import type { Pool } from 'pg';
@@ -13,8 +13,10 @@ export const getAuth = (database: Pool, configService: ConfigService) =>
       'BETTER_AUTH_BASE_URL',
       'http://localhost:3000/api/auth',
     ),
+    logger: {
+      level: 'debug',
+    },
     secret: configService.get<string>('BETTER_AUTH_SECRET'),
-
     plugins: [
       admin({
         defaultRole: Role.USER,
@@ -23,9 +25,12 @@ export const getAuth = (database: Pool, configService: ConfigService) =>
       openAPI({
         path: '/docs',
       }),
+      jwt(),
+      bearer(),
     ],
     trustedOrigins: ['*'],
     advanced: {
+      useSecureCookies: false, // Allow JWT cookie in local
       database: {
         generateId: () => uuidv7(),
       },
@@ -51,8 +56,12 @@ export const getAuth = (database: Pool, configService: ConfigService) =>
       enabled: true,
     },
     session: {
+      cookieCache: {
+        enabled: true,
+        strategy: 'jwt',
+      },
       freshAge: 10,
-      modelName: 'sessions',
+      modelName: 'sessions', // fallback model
     },
     disabledPaths: AUTH_IGNORE_ROUTERS,
     user: {
