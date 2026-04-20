@@ -22,7 +22,7 @@ export class MailService {
           otp,
           expiresIn: expiresInMinutes,
           currentYear: new Date().getFullYear(),
-          appName: this.configService.get<string>('APP_NAME', 'ILU PET'),
+          appName: this.configService.get<string>('APP_NAME', 'Nest Base'),
         },
       });
       return true;
@@ -42,7 +42,7 @@ export class MailService {
         context: {
           url,
           currentYear: new Date().getFullYear(),
-          appName: this.configService.get<string>('APP_NAME', 'ILU PET'),
+          appName: this.configService.get<string>('APP_NAME', 'Nest Base'),
         },
       });
       return true;
@@ -64,7 +64,7 @@ export class MailService {
         context: {
           url,
           currentYear: new Date().getFullYear(),
-          appName: this.configService.get<string>('APP_NAME', 'ILU PET'),
+          appName: this.configService.get<string>('APP_NAME', 'Nest Base'),
         },
       });
       return true;

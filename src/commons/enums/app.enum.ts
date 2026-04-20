@@ -8,12 +8,3 @@ export enum Role {
   USER = 'user',
 }
 export const ALL_ROLES = [Role.USER, Role.ADMIN];
-
-/**
- * Enum representing user account statuses
- */
-export enum UserStatus {
-  ACTIVE = 'active',
-  INACTIVE = 'inactive',
-  BANNED = 'banned',
-}

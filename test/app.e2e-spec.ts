@@ -1,8 +1,49 @@
 import type { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import type { App } from 'supertest/types';
+jest.mock('@thallesp/nestjs-better-auth', () => ({
+  AuthGuard: jest.fn().mockImplementation(() => ({
+    canActivate: () => true,
+  })),
+  AuthModule: {
+    forRootAsync: jest.fn().mockReturnValue({
+      module: class {
+        static forRootAsync() {
+          return {
+            module: class {},
+            providers: [],
+          };
+        }
+      },
+      providers: [],
+    }),
+  },
+  AllowAnonymous: () => jest.fn(),
+  Roles: () => jest.fn(),
+  Session: () => jest.fn(),
+  ActiveUser: () => jest.fn(),
+}));
+
+jest.mock('better-auth', () => ({
+  betterAuth: jest.fn().mockReturnValue({
+    handler: jest.fn(),
+    api: {},
+  }),
+}));
+
+jest.mock('better-auth/plugins', () => ({
+  admin: jest.fn(),
+  jwt: jest.fn(),
+  bearer: jest.fn(),
+  twoFactor: jest.fn(),
+  multiSession: jest.fn(),
+  emailOTP: jest.fn(),
+  openAPI: jest.fn(),
+  phoneNumber: jest.fn(),
+}));
+
 import { AppModule } from './../src/app.module';
 
 describe('AppController (e2e)', () => {

@@ -13,10 +13,17 @@ export interface IDocResponseOptions<T> {
   isArray?: boolean;
 }
 
+export interface IDocErrorOptions {
+  status: HttpStatus;
+  message?: string;
+  errorCode?: string | number;
+}
+
 export interface IDocOptions<T> {
   description?: string;
   response?: IDocResponseOptions<T>;
   request?: IDocRequestOptions;
+  errors?: IDocErrorOptions[];
   summary?: string;
   operationId?: string;
 }

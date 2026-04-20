@@ -9,9 +9,15 @@ import {
   ApiResponse,
   getSchemaPath,
 } from '@nestjs/swagger';
+import type { ExampleObject } from '@nestjs/swagger/dist/interfaces/open-api-spec.interface';
 
-import type { IDocOptions, IDocResponseOptions } from './doc.interface';
+import type {
+  IDocErrorOptions,
+  IDocOptions,
+  IDocResponseOptions,
+} from './doc.interface';
 import { AppResponseSerialization } from './response.serialization';
+import { FILE_UPLOAD_METADATA_KEY } from '../decorators/file-upload.decorator';
 
 export const RESPONSE_DOCS_METADATA = 'RESPONSE_DOCS_METADATA';
 
@@ -78,21 +84,44 @@ function applyOperationDecorators<T>(
  * @returns Method decorator
  */
 export function Doc<T>(options?: IDocOptions<T>): MethodDecorator {
-  const decorators: MethodDecorator[] = [];
+  return (
+    target: object,
+    propertyKey: string | symbol,
+    descriptor: TypedPropertyDescriptor<unknown>,
+  ) => {
+    // Check metadata from the function itself (SetMetadata puts it here)
+    const isFileUpload = Reflect.getMetadata(
+      FILE_UPLOAD_METADATA_KEY,
+      descriptor.value as object,
+    ) as boolean | undefined;
 
-  // Apply common decorators
-  decorators.push(...applyCommonDecorators(options));
+    const effectiveOptions = { ...options };
+    if (isFileUpload && !effectiveOptions.request?.bodyType) {
+      if (!effectiveOptions.request) {
+        effectiveOptions.request = {};
+      }
+      effectiveOptions.request.bodyType = 'FORM_DATA';
+    }
 
-  // Apply parameter decorators
-  decorators.push(...applyParamDecorators(options));
+    const decorators: MethodDecorator[] = [];
 
-  // Apply operation decorators
-  decorators.push(...applyOperationDecorators(options));
+    // Apply common decorators
+    decorators.push(...applyCommonDecorators(effectiveOptions));
 
-  // Add metadata
-  decorators.push(SetMetadata(RESPONSE_DOCS_METADATA, true));
+    // Apply parameter decorators
+    decorators.push(...applyParamDecorators(effectiveOptions));
 
-  return applyDecorators(...decorators);
+    // Apply error decorators
+    decorators.push(...applyErrorDecorators(effectiveOptions?.errors));
+
+    // Apply operation decorators
+    decorators.push(...applyOperationDecorators(effectiveOptions));
+
+    // Add metadata
+    decorators.push(SetMetadata(RESPONSE_DOCS_METADATA, true));
+
+    return applyDecorators(...decorators)(target, propertyKey, descriptor);
+  };
 }
 
 /**
@@ -160,4 +189,53 @@ function DocDefault<T>({
   );
 
   return applyDecorators(...decorators);
+}
+
+/**
+ * Apply error decorators for API documentation
+ * Groups errors by status code and creates examples for Swagger
+ * @param errors Error options
+ * @returns Array of method decorators
+ */
+function applyErrorDecorators(errors?: IDocErrorOptions[]): MethodDecorator[] {
+  if (!errors || errors.length === 0) return [];
+
+  // Group errors by status code
+  const groupedByStatus = errors.reduce(
+    (acc, curr) => {
+      const status = curr.status as number;
+      if (!acc[status]) {
+        acc[status] = [];
+      }
+      acc[status].push(curr);
+      return acc;
+    },
+    {} as Record<number, IDocErrorOptions[]>,
+  );
+
+  return Object.entries(groupedByStatus).map(([status, errorGroup]) => {
+    const examples: Record<string, ExampleObject> = {};
+
+    errorGroup.forEach((error, index) => {
+      const key = error.errorCode ? String(error.errorCode) : `error_${index}`;
+      examples[key] = {
+        summary: error.message || `Error code: ${error.errorCode}`,
+        value: {
+          statusCode: Number.parseInt(status, 10),
+          message: error.message || 'Error occurred',
+          code: error.errorCode,
+        },
+      };
+    });
+
+    return ApiResponse({
+      status: Number.parseInt(status, 10),
+      description: errorGroup.map((e) => e.message).join(' / '),
+      content: {
+        'application/json': {
+          examples,
+        },
+      },
+    });
+  });
 }

@@ -3,8 +3,8 @@ import { Injectable, LoggerService as NestLoggerService } from '@nestjs/common';
 import { createLogger, Logger, format, transports } from 'winston';
 import type { Logform } from 'winston';
 import { generateId } from '../../utils/nanoid-generators';
-import * as dayjs from 'dayjs';
-import * as chalk from 'chalk';
+import dayjs from 'dayjs';
+import chalk from 'chalk';
 import * as path from 'path';
 import 'winston-daily-rotate-file';
 

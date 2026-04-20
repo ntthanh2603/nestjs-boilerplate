@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Media, MediaStatus } from './entities/media.entity';
@@ -14,17 +14,9 @@ import { ConfigService } from '@nestjs/config';
 import sharp from 'sharp';
 import * as path from 'path';
 import { StoragePath } from './storage.enums';
-
-interface StorageUploadMessage {
-  mediaId: string;
-  fileUrl: string;
-  mimeType: string;
-  filename: string;
-  folder: string;
-}
-
+import { KafkaTopic } from '../kafka/kafka.enum';
 @Injectable()
-export class StorageService implements OnModuleInit {
+export class StorageService {
   private readonly logger = new Logger(StorageService.name);
   private s3Client: S3Client;
   private signingClient: S3Client;
@@ -66,42 +58,6 @@ export class StorageService implements OnModuleInit {
     });
   }
 
-  onModuleInit() {
-    this.kafkaService
-      .consume('storage-upload', 'storage-group', async ({ message }) => {
-        if (!message.value) {
-          return;
-        }
-
-        try {
-          const { mediaId, fileUrl, mimeType, filename, folder } = JSON.parse(
-            message.value.toString(),
-          ) as StorageUploadMessage;
-          const response = await fetch(fileUrl);
-          if (!response.ok) {
-            throw new Error(
-              `Failed to fetch file from presigned URL: ${response.statusText}`,
-            );
-          }
-          const arrayBuffer = await response.arrayBuffer();
-          await this.processUpload(
-            mediaId,
-            Buffer.from(arrayBuffer),
-            mimeType,
-            filename,
-            folder,
-          );
-        } catch (err) {
-          this.logger.error('Error processing Kafka message', err);
-        }
-      })
-      .catch((error) => {
-        this.logger.error(
-          'Failed to start Storage Kafka consumer in background',
-          error,
-        );
-      });
-  }
 
   async uploadFile(
     file: {
@@ -182,7 +138,7 @@ export class StorageService implements OnModuleInit {
         { expiresIn: 3600 },
       );
 
-      await this.kafkaService.produce('storage-upload', [
+      await this.kafkaService.produce(KafkaTopic.STORAGE_UPLOAD, [
         {
           value: JSON.stringify({
             mediaId: savedMedia.id,
@@ -237,7 +193,7 @@ export class StorageService implements OnModuleInit {
     }
   }
 
-  private async processUpload(
+  async processUpload(
     mediaId: string,
     buffer: Buffer,
     mimeType: string,

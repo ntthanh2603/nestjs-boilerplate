@@ -55,7 +55,9 @@ services:
 
   app:
     container_name: app
-    image: ghcr.io/tomotek/tmt-ilupet-api:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     restart: always
     ports:
       - "${APP_PORT:-3000}:${APP_PORT:-3000}"
@@ -96,7 +98,7 @@ services:
       - redpanda
       - start
       - --smp
-      - "1"
+      - "2"
       - --reserve-memory
       - 0M
       - --overprovisioned
@@ -236,7 +238,7 @@ services:
     container_name: seaweedfs
     env_file:
       - .env
-    command: 'server -master -volume -filer -s3 -s3.config=/etc/seaweedfs/s3.json'
+    command: "server -master -volume -filer -s3 -s3.config=/etc/seaweedfs/s3.json"
     ports:
       - "9333:9333"
       - "${SEAWEEDFS_VOLUME_PORT:-8080}:8080"
@@ -257,6 +259,20 @@ services:
       - ./seaweedfs/s3.json:/etc/seaweedfs/s3.json
     networks:
       - nest_base
+
+  kafka-ui:
+    container_name: kafka-ui
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - "${KAFKA_UI_PORT:-8088}:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: redpanda:29092
+      DYNAMIC_CONFIG_ENABLED: "true"
+    networks:
+      - nest_base
+    depends_on:
+      - redpanda
 
 volumes:
   pgdata:

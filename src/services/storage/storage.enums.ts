@@ -4,4 +4,5 @@ export enum StoragePath {
 
   // General
   UPLOADS = 'uploads',
+  TEMPORARY = 'temporary',
 }

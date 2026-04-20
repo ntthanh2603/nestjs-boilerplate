@@ -44,7 +44,9 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit() {
     try {
-      await this.producer.connect();
+      if (this.producer) {
+        await this.producer.connect();
+      }
       this.isProducerReady = true;
       this.logger.log('Kafka Producer connected successfully');
     } catch (error) {
@@ -113,9 +115,9 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
     const consumer = this.kafka.consumer({
       groupId,
       retry: { initialRetryTime: 100, retries: 10 },
-      sessionTimeout: 60000,
+      sessionTimeout: 15000,
       heartbeatInterval: 3000,
-      rebalanceTimeout: 90000,
+      rebalanceTimeout: 30000,
     });
     await consumer.connect();
     await consumer.subscribe({ topic, fromBeginning: false });
@@ -136,9 +138,9 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
   ) {
     const consumer = this.kafka.consumer({
       groupId,
-      sessionTimeout: 60000,
+      sessionTimeout: 15000,
       heartbeatInterval: 3000,
-      rebalanceTimeout: 90000,
+      rebalanceTimeout: 30000,
     });
     await consumer.connect();
     await consumer.subscribe({ topic, fromBeginning: false });
