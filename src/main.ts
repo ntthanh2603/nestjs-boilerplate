@@ -92,6 +92,7 @@ async function bootstrap() {
     .setDescription('Primary API documentation for Nest Base.')
     .setVersion('1.0')
     .addBearerAuth()
+    .setExternalDoc('Authentication Docs', 'auth/docs')
     .build();
 
   const mainDocument = SwaggerModule.createDocument(app, mainConfig);
@@ -141,6 +142,10 @@ async function bootstrap() {
             url: 'https://scalar.com/logo.svg',
             altText: 'Auth Logo',
           },
+        },
+        externalDocs: {
+          url: `/${API_GLOBAL_PREFIX}/docs`,
+          description: 'Main API documentation',
         },
         paths: authPaths,
         components: authSchema.components,
